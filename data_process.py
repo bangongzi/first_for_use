@@ -2,9 +2,10 @@
 # -*- coding: UTF-8 -*-
 
 from __future__ import division
-from mininet.log import info, error, debug, output, warn
+import sys
+#from mininet.log import info, error, debug, output, warn
 
-def readtxt(str,send_pkt,retrans_pkt):
+def readtxt(str,send_pkt,retrans_pkt,depth = 1 ):
 	filename = str + "netstat.txt"
 	file = open(filename,"r")
 	trans_sum = [];
@@ -25,37 +26,51 @@ def readtxt(str,send_pkt,retrans_pkt):
 			i=line.find("segments retransmited")-1
 			str = line[4:i]
 			retrans_sum.append(int(str))
-	j = len(trans_sum)-1
+	j = len(trans_sum)-depth
 	SendPkt = trans_sum[j] - trans_sum[j-1]
-	j = len(retrans_sum)-1
+	j = len(retrans_sum)-depth
 	RetransPkt = retrans_sum[j] - retrans_sum[j-1]
 	send_pkt.append(SendPkt)
 	retrans_pkt.append(RetransPkt)
 	file.close()
 	return
 
-host_num = 13
-tag_num = host_num -1
-send_pkt = [];
-retrans_pkt = [];
-rate = [];
-total_send = 0
-total_retrans = 0
-#read the statics in the files
-for i in xrange(0,tag_num):
-	string ='h' + str(i+1)
-	readtxt(str=string,send_pkt = send_pkt,retrans_pkt = retrans_pkt);
-#calculate the packet lost rate of each host
-for i in xrange(0,tag_num):
-	rate.append(retrans_pkt[i]/send_pkt[i])
-	total_retrans += retrans_pkt[i]
-	total_send += send_pkt[i]
-#show the data
-print retrans_pkt
-print send_pkt
-rate.append(total_retrans/total_send)
-print "The packet loss rate of h1 to h12 are:"
-#for i in xrange(0,tag_num):
-#	output("%.8f\t" %rate[i])
-print "%.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f " %(rate[0],rate[1],rate[2],rate[3],rate[4],rate[5],rate[6],rate[7],rate[8],rate[9],rate[10],rate[11])
-print "The total packet loss rate is:%.8f" %rate[tag_num] 
+def data_process(left,right):
+	txt_read_num = right -left + 1
+	send_pkt = []
+	retrans_pkt = []
+	#The first element is used to store the total
+	#number of packets retransmitted,the second for 
+	#packets send,the third is for packet lost rate
+	rate = [0,0,0]
+	for i in xrange(left,right+1):
+		string ='h' + str(i)
+		readtxt(str=string,send_pkt = send_pkt,retrans_pkt = retrans_pkt)
+	for i in xrange(0,txt_read_num):
+		rate[0] += retrans_pkt[i]
+		rate[1] += send_pkt[i]
+	rate[2] = rate[0]/rate[1]
+	print "Here are numbers of retrans/send packets of h%s to h%s:" %(str(left),str(right))
+	print retrans_pkt,"\n",send_pkt
+	print "The total packet loss rate is:%.8f" %rate[2]
+
+if len(sys.argv) == 1:
+	left = 1
+	right = 12
+	data_process(left = left,right = right)
+elif len(sys.argv) == 2:
+	print "The latency is %s" %sys.argv[1]
+	left = 1
+	right = 12
+	data_process(left = left,right = right)
+elif len(sys.argv) == 3:
+	left = int(sys.argv[1])
+	right = int(sys.argv[2])
+	data_process(left = left,right = right)
+elif len(sys.argv) == 4:
+	print "The latency is %s" %sys.argv[3]
+	left = int(sys.argv[1])
+	right = int(sys.argv[2])
+	data_process(left = left,right = right)
+else:
+	print "Wrong number of parameters"
