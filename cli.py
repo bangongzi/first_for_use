@@ -113,16 +113,22 @@ class CLI( Cmd ):
 ###########################changed do_iperfmulti############
 ############################################################
     def do_iperfmulti( self, line ):
-        """Multi iperf UDP test between nodes"""
+        """Multi iperf TCP test between nodes"""
+        """The format is iperfmulti 10(s) 3(times) 130(K)"""
         args = line.split()
         if len(args) == 1:
             period = args[ 0 ]
             self.mn.iperfMulti(float(period))
- #       elif len(args) == 2:
- #           udpBw = args[ 0 ]
- #           period = args[ 1 ]
- #           err = False
- #           self.mn.iperfMulti(udpBw, float(period))"""
+        elif len(args) == 2:
+            period = args[ 0 ]
+            repeat_time = args[ 1 ]
+            err = False
+            self.mn.iperfMulti(float(period),int(repeat_time))
+        elif len(args) == 3:
+            period = args[ 0 ]
+            repeat_time = args[ 1 ]
+            window_size = args[ 2 ]
+            self.mn.iperfMulti(float(period),int(repeat_time),int(window_size))
         else:
             error('invalid number of args: iperfmulti udpBw period\n' +
                'udpBw examples: 1M 120\n')
