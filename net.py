@@ -876,7 +876,7 @@ class Mininet( object ):
 ##################################################################################
 ##############################changed part starts#################################
 ##################################################################################
-    def iperf_single( self,hosts=None, udpBw='10M', period=60, port=5001):
+    def iperf_single( self,hosts=None,period=60,window_size = 45):
         """Run iperf between two hosts using TCP.
            hosts: list of hosts; if None, uses opposite hosts
            returns: results two-element array of server and client speeds"""
@@ -889,11 +889,8 @@ class Mininet( object ):
         output( '*** Iperf: building TCP connection between ' )
         output( "%s and %s\n" % ( client.name, server.name ) )
         iperfArgs = 'iperf '
-        bwArgs = '-b ' + udpBw + ' '
-# #       print "***start server***"
-# #       server.cmd( iperfArgs + '-s -i 1' + ' > /home/per/log/' + filename + '&')
         client.cmd(
-            iperfArgs + '-t '+ str(period) + ' -c ' + server.IP() + ' '
+            iperfArgs + '-t '+ str(period) + ' -c ' + server.IP() + ' -w' +str(window_size)
             +' >> /home/per/log/'  + 'client'+ filename +'.out'+'&')
 
     def netstat_output( self,hosts=None):
@@ -907,8 +904,7 @@ class Mininet( object ):
         filename = client.name[1:]
         client.cmd('netstat -s '+' >> /home/per/log/netstat/'  + 'h'+ filename +'netstat.txt')
 
-    def iperfMulti(self,period=60):
-    	base_port = 5001
+    def iperfMulti(self,period=60,repeat_time = 1,window_size = 45):
     	server_list = []
     	client_list = [h for h in self.hosts]
     	host_list = []
@@ -921,26 +917,19 @@ class Mininet( object ):
  
         _len = len(host_list)
         server = host_list[tag_num]
-#        print "***start server on h28***"
-#        server.cmd( 'iperf -s -i 1' + ' >> /home/per/log/' + 'server.out'+ '&')
-    	for i in xrange(0, tag_num):
-            client = host_list[i]
-#            server = client
-#            while( server == client ):
-#                server = random.choice(host_list) 
-#            server_list.append(server)
-#            server = host_list[36]
-            self.iperf_single(hosts = [client, server], udpBw='10M', period= period, port=base_port)
-            sleep(.05)
-            base_port += 1
-        sleep(.1)
-        sleep(period)
-        print "test has been done"
-        for i in xrange(0, tag_num):
-            client = host_list[i]
-            self.netstat_output(hosts = [client, server])
-            sleep(.05)
-        print "segments statics has been stored"
+        for i in xrange(0,repeat_time):
+            print "test%d begins:" %(i+1)
+    	    for j in xrange(0, tag_num):
+                client = host_list[j]
+                self.iperf_single(hosts = [client, server],period= period,window_size=window_size)
+                sleep(.05)
+            sleep(.1)
+            sleep(period)
+            for j in xrange(0, tag_num):
+                client = host_list[j]
+                self.netstat_output(hosts = [client, server])
+                sleep(.05)
+            print "The test is done and statics has been stored\n"
 	
 ##################################################################################
 ##############################changed part ends###################################
